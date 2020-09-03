@@ -5,14 +5,16 @@
 //--------------------------------------------------------------------------------------
 #include "DXUT.h"
 #include "resource.h"
-#include <conio.h>
 IDirect3DTexture9* g_Texture;
 ID3DXSprite* g_Sprite;
 D3DXIMAGE_INFO g_Info;
 D3DXCOLOR g_Color = 0xffffffff;
-LPD3DXFONT fonts[104];
-D3DXVECTOR2 fontpos[104];
-RECT fontrct[104];
+LPD3DXFONT fonts[105];
+D3DXVECTOR2 fontpos[105];
+RECT fontrct[105];
+time_t g_Time;
+tm* g_Localtime;
+
 int P[103] = { 0, };
 int W[256] = { 0, };
 int a = 0;
@@ -45,7 +47,8 @@ HRESULT CALLBACK OnD3D9CreateDevice( IDirect3DDevice9* pd3dDevice, const D3DSURF
         for (int i = 0; i < 103; i++)
             P[i] = 0;
     }
-   
+    g_Time = time(0);
+    g_Localtime = localtime(&g_Time);
     D3DXCreateSprite(pd3dDevice, &g_Sprite);
     D3DXCreateTextureFromFileEx(DXUTGetD3D9Device(), L"keyboard.png", -2, -2, 1, 0, D3DFORMAT::D3DFMT_A8B8G8R8, D3DPOOL_MANAGED, D3DX_FILTER_NONE, D3DX_FILTER_NONE, 0, &g_Info, nullptr, (LPDIRECT3DTEXTURE9*)&g_Texture);
     for (int i = 0; i < 105; i++)
@@ -55,6 +58,8 @@ HRESULT CALLBACK OnD3D9CreateDevice( IDirect3DDevice9* pd3dDevice, const D3DSURF
     }
     fontpos[103] = { 0,0 };
     D3DXCreateFont(DXUTGetD3D9Device(), 17, 0, FW_BOLD, 1, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Arial", &fonts[103]);
+    fontpos[104] = { 0,0 };
+    D3DXCreateFont(DXUTGetD3D9Device(), 17, 0, FW_BOLD, 1, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Arial", &fonts[104]);
     /// first line
     fontpos[0] = { 26,26 };
     fontpos[1] = { 135,26 };
@@ -120,6 +125,8 @@ HRESULT CALLBACK OnD3D9CreateDevice( IDirect3DDevice9* pd3dDevice, const D3DSURF
     fontpos[102] = { 1133, 323 };
     ///
     fontpos[103] = { 900, 70 };
+    fontpos[104] = { 700, 70 };
+
     return S_OK;
 }
 
@@ -492,11 +499,43 @@ void CALLBACK OnD3D9FrameRender( IDirect3DDevice9* pd3dDevice, double fTime, flo
         g_Sprite->End();
         result = 0;
         for (int i = 0; i < 103; i++)
-        {
             result += P[i];
+        float average = (float)result / 103;
+        for (int i = 0; i < 103; i++)
+        {
+            D3DXCOLOR col(0, 0, 0, 1);
+            float compare = P[i];
+            if (average / 5 > compare)
+                col = { 0,0,0,1 };
+            else if (average / 4 > compare)
+                col = { 0.05,0,0,1 };
+            else if (average / 3  > compare)
+                col = { 0.1,0,0,1 };
+            else if (average / 2 > compare)
+                col = { 0.15,0,0,1 };
+            else if ((average * 10) < compare)
+                col = { 1,0,0,1 };
+            else if ((average * 9) < compare)
+                col = { 0.9,0,0,1 };
+            else if ((average * 8) < compare)
+                col = { 0.8,0,0,1 };
+            else if ((average * 7) < compare)
+                col = { 0.7,0,0,1 };
+            else if ((average * 6) < compare)
+                col = { 0.6,0,0,1 };
+            else if ((average * 5) < compare)
+                col = { 0.5,0,0,1 };
+            else if ((average * 4) < compare)
+                col = { 0.4,0,0,1 };
+            else if ((average * 3) < compare)
+                col = { 0.35,0,0,1 };
+            else if ((average * 2) < compare)
+                col = { 0.3,0,0,1 };
+            else if (average < compare)
+                col = { 0.25,0,0,1 };
             wstring val = to_wstring(P[i]);
             SetRect(&fontrct[i], fontpos[i].x, fontpos[i].y, 0, 0);
-            fonts[i]->DrawTextW(nullptr, val.c_str(), -1, &fontrct[i], DT_NOCLIP, D3DXCOLOR(0, 0, 0, 1));
+            fonts[i]->DrawTextW(nullptr, val.c_str(), -1, &fontrct[i], DT_NOCLIP, col);
         }
         char buff[MAX_SIZE_SECURITY_ID];
         sprintf(buff, "Total Keyboard pressed : %d", result);
@@ -505,6 +544,12 @@ void CALLBACK OnD3D9FrameRender( IDirect3DDevice9* pd3dDevice, double fTime, flo
         aa.assign(a.begin(), a.end());
         SetRect(&fontrct[103], fontpos[103].x, fontpos[103].y, 0, 0);
         fonts[103]->DrawTextW(nullptr, aa.c_str(), -1, &fontrct[103], DT_NOCLIP, D3DXCOLOR(0, 0, 0, 1));
+        sprintf(buff, "Started At %d(day) - %d:%d:%d", g_Localtime->tm_mday, g_Localtime->tm_hour, g_Localtime->tm_min, g_Localtime->tm_sec);
+        a = buff;
+        aa.assign(a.begin(), a.end());
+        SetRect(&fontrct[104], fontpos[104].x, fontpos[104].y, 0, 0);
+        fonts[103]->DrawTextW(nullptr, aa.c_str(), -1, &fontrct[104], DT_NOCLIP, D3DXCOLOR(0, 0, 0, 1));
+
         V( pd3dDevice->EndScene() );
     }
 }
